@@ -1,130 +1,225 @@
-# scrcpy
+**This GitHub repo (<https://github.com/Genymotion-device>) is the only official
+source for the project. Do not download releases from random websites, even if
+their name contains `scrcpy`.**
 
-**scrcpy** (Screen Copy) is an open-source tool for displaying and controlling an Android device from a computer. It supports both USB and wireless connections, providing developers and enthusiasts with an efficient way to interact with their Android devices via a PC or laptop.
+# scrcpy (v3.1)
 
-## Key Features
+<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
-- **High performance:** scrcpy supports resolutions up to 1920x1080 at 60 frames per second. It utilizes hardware video encoding (H.264) for high performance and low latency.
-- **Two-way interaction:** You can not only view the device screen but also control it using your mouse and keyboard.
-- **No need for additional apps:** Scrcpy does not require any apps to be installed on the Android device. All necessary components run from the computer.
-- **Cross-platform support:** scrcpy works on Windows, Linux, and macOS, making it a versatile tool for users across different operating systems.
-- **Low latency:** scrcpy provides minimal latency when displaying the screen, making it ideal for real-time use, such as demonstrations or app testing.
-- **Wireless connection support:** Scrcpy allows you to connect to your device over Wi-Fi, eliminating the need for a USB cable.
+_pronounced "**scr**een **c**o**py**"_
 
-## Installation
+This application mirrors Android devices (video and audio) connected via
+USB or [over TCP/IP](doc/connection.md#tcpip-wireless), and allows to control the
+device with the keyboard and the mouse of the computer. It does not require any
+_root_ access. It works on _Linux_, _Windows_ and _macOS_.
 
-### Linux
+![screenshot](assets/screenshot-debian-600.jpg)
 
-To install on Linux, follow these steps:
+It focuses on:
 
-1. Update the package list:
+ - **lightness**: native, displays only the device screen
+ - **performance**: 30~120fps, depending on the device
+ - **quality**: 1920×1080 or above
+ - **low latency**: [35~70ms][lowlatency]
+ - **low startup time**: ~1 second to display the first image
+ - **non-intrusiveness**: nothing is left installed on the Android device
+ - **user benefits**: no account, no ads, no internet required
+ - **freedom**: free and open source software
+
+[lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
+
+Its features include:
+ - [audio forwarding](doc/audio.md) (Android 11+)
+ - [recording](doc/recording.md)
+ - [virtual display](doc/virtual_display.md)
+ - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
+ - [copy-paste](doc/control.md#copy-paste) in both directions
+ - [configurable quality](doc/video.md)
+ - [camera mirroring](doc/camera.md) (Android 12+)
+ - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
+ - [gamepad](doc/gamepad.md) support
+ - [OTG mode](doc/otg.md)
+ - and more…
+
+[hid-keyboard]: doc/keyboard.md#physical-keyboard-simulation
+[hid-mouse]: doc/mouse.md#physical-mouse-simulation
+
+## Prerequisites
+
+The Android device requires at least API 21 (Android 5.0).
+
+[Audio forwarding](doc/audio.md) is supported for API >= 30 (Android 11+).
+
+Make sure you [enabled USB debugging][enable-adb] on your device(s).
+
+[enable-adb]: https://developer.android.com/studio/debug/dev-options#enable
+
+On some devices (especially Xiaomi), you might get the following error:
+
+```
+java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+```
+
+In that case, you need to enable [an additional option][control] `USB debugging
+(Security Settings)` (this is an item different from `USB debugging`) to control
+it using a keyboard and mouse. Rebooting the device is necessary once this
+option is set.
+
+[control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
+
+Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
+
+
+## Get the app
+
+ - [Linux](doc/linux.md)
+ - [Windows](doc/windows.md) (read [how to run](doc/windows.md#run))
+ - [macOS](doc/macos.md)
+
+
+## Must-know tips
+
+ - [Reducing resolution](doc/video.md#size) may greatly improve performance
+   (`scrcpy -m1024`)
+ - [_Right-click_](doc/mouse.md#mouse-bindings) triggers `BACK`
+ - [_Middle-click_](doc/mouse.md#mouse-bindings) triggers `HOME`
+ - <kbd>Alt</kbd>+<kbd>f</kbd> toggles [fullscreen](doc/window.md#fullscreen)
+ - There are many other [shortcuts](doc/shortcuts.md)
+
+
+## Usage examples
+
+There are a lot of options, [documented](#user-documentation) in separate pages.
+Here are just some common examples.
+
+ - Capture the screen in H.265 (better quality), limit the size to 1920, limit
+   the frame rate to 60fps, disable audio, and control the device by simulating
+   a physical keyboard:
+
     ```bash
-    sudo apt update
+    scrcpy --video-codec=h265 --max-size=1920 --max-fps=60 --no-audio --keyboard=uhid
+    scrcpy --video-codec=h265 -m1920 --max-fps=60 --no-audio -K  # short version
     ```
 
-2. Install the necessary dependencies:
+ - Start VLC in a new virtual display (separate from the device display):
+
     ```bash
-    sudo apt install adb ffmpeg libsdl2-2.0-0 libavcodec-dev libavformat-dev libswscale-dev libx11-dev
+    scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
     ```
 
-3. Install scrcpy:
+ - Record the device camera in H.265 at 1920x1080 (and microphone) to an MP4
+   file:
+
     ```bash
-    sudo apt install scrcpy
+    scrcpy --video-source=camera --video-codec=h265 --camera-size=1920x1080 --record=file.mp4
     ```
 
-### Windows
+ - Capture the device front camera and expose it as a webcam on the computer (on
+   Linux):
 
-For Windows users, download the release from the [official GitHub page](https://github.com/Genymotion-device/scrcpy/releases).
-
-1. Download the archive for Windows.
-2. Extract the archive to a preferred location.
-3. Run `scrcpy.exe`.
-
-### macOS
-
-To install on macOS, it's recommended to use [Homebrew](https://brew.sh/):
-
-1. Install Homebrew if it's not already installed:
     ```bash
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    scrcpy --video-source=camera --camera-size=1920x1080 --camera-facing=front --v4l2-sink=/dev/video2 --no-playback
     ```
 
-2. Install scrcpy:
+ - Control the device without mirroring by simulating a physical keyboard and
+   mouse (USB debugging not required):
+
     ```bash
-    brew install scrcpy
+    scrcpy --otg
     ```
 
-## Usage
+ - Control the device using gamepad controllers plugged into the computer:
 
-To use scrcpy, connect your Android device to your computer via USB or Wi-Fi.
-
-### USB Connection
-
-1. Enable USB debugging on your Android device:
-    - Go to "Settings" -> "About phone" and tap "Build number" multiple times to enable Developer options.
-    - In the Developer options, enable "USB debugging."
-
-2. Connect the device to your PC using a USB cable.
-
-3. Run scrcpy:
     ```bash
-    scrcpy
+    scrcpy --gamepad=uhid
+    scrcpy -G  # short version
     ```
 
-### Wireless Connection
+## User documentation
 
-To use scrcpy over Wi-Fi, follow these steps:
+The application provides a lot of features and configuration options. They are
+documented in the following pages:
 
-1. Connect your device to your PC via USB.
-2. Get the device's IP address:
-    ```bash
-    adb shell ip route
-    ```
+ - [Connection](doc/connection.md)
+ - [Video](doc/video.md)
+ - [Audio](doc/audio.md)
+ - [Control](doc/control.md)
+ - [Keyboard](doc/keyboard.md)
+ - [Mouse](doc/mouse.md)
+ - [Gamepad](doc/gamepad.md)
+ - [Device](doc/device.md)
+ - [Window](doc/window.md)
+ - [Recording](doc/recording.md)
+ - [Virtual display](doc/virtual_display.md)
+ - [Tunnels](doc/tunnels.md)
+ - [OTG](doc/otg.md)
+ - [Camera](doc/camera.md)
+ - [Video4Linux](doc/v4l2.md)
+ - [Shortcuts](doc/shortcuts.md)
 
-3. Enable Wi-Fi mode for scrcpy:
-    ```bash
-    adb tcpip 5555
-    ```
 
-4. Disconnect the USB cable and connect over Wi-Fi:
-    ```bash
-    adb connect <ip_address>
-    ```
+## Resources
 
-5. Run scrcpy:
-    ```bash
-    scrcpy
-    ```
+ - [FAQ](FAQ.md)
+ - [Translations][wiki] (not necessarily up to date)
+ - [Build instructions](doc/build.md)
+ - [Developers](doc/develop.md)
 
-## Additional Features
+[wiki]: https://github.com/Genymobile/scrcpy/wiki
 
-- **Screen recording:** scrcpy supports screen recording from your device. To start recording, use the `--record` flag:
-    ```bash
-    scrcpy --record file.mp4
-    ```
-- **Quality adjustments:** You can adjust the image quality and data rate using the `-b` flag for bitrate and `-m` for maximum resolution. For example:
-    ```bash
-    scrcpy -b 8M -m 1024
-    ```
-- **Audio support:** If your device supports audio, scrcpy can forward audio from your device to your computer. Use the `--audio` flag:
-    ```bash
-    scrcpy --audio
-    ```
 
-## Tips and Tricks
+## Articles
 
-- **Keyboard control:** All standard keyboard events, such as key presses, work through scrcpy, allowing you to interact with your Android device as if you were using a keyboard and mouse.
-- **Keyboard shortcuts:** Scrcpy supports several keyboard shortcuts, such as `Ctrl + c` for copying, `Ctrl + v` for pasting, and others.
-- **Fullscreen mode:** To use the device screen in fullscreen mode, simply press `Ctrl + f`.
+- [Introducing scrcpy][article-intro]
+- [Scrcpy now works wirelessly][article-tcpip]
+- [Scrcpy 2.0, with audio][article-scrcpy2]
 
-## License
+[article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
+[article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+[article-scrcpy2]: https://blog.rom1v.com/2023/03/scrcpy-2-0-with-audio/
 
-scrcpy is distributed under the **Apache 2.0** license. You are free to use, modify, and distribute the software under the terms of the license.
+## Contact
 
-## Contact the Developers
+You can open an [issue] for bug reports, feature requests or general questions.
 
-If you encounter any issues with scrcpy or have suggestions for improvement, please open an issue on the [GitHub repository](https://github.com/Genymotion-device/scrcpy).
+For bug reports, please read the [FAQ](FAQ.md) first, you might find a solution
+to your problem immediately.
 
-## Conclusion
+[issue]: https://github.com/Genymobile/scrcpy/issues
 
-scrcpy is an incredibly powerful tool for interacting with Android devices from a computer. It is easy to use, highly performant, and supports both wired and wireless connections. If you regularly work with Android apps or want to demonstrate your device's content on a larger screen, scrcpy will become an indispensable tool in your workflow.
+You can also use:
+
+ - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - BlueSky: [`@scrcpy.bsky.social`](https://bsky.app/profile/scrcpy.bsky.social)
+ - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
+
+
+## Donate
+
+I'm [@rom1v](https://github.com/rom1v), the author and maintainer of _scrcpy_.
+
+If you appreciate this application, you can [support my open source
+work][donate]:
+ - [GitHub Sponsors](https://github.com/sponsors/rom1v)
+ - [Liberapay](https://liberapay.com/rom1v/)
+ - [PayPal](https://paypal.me/rom2v)
+
+[donate]: https://blog.rom1v.com/about/#support-my-open-source-work
+
+## Licence
+
+    Copyright (C) 2018 Genymobile
+    Copyright (C) 2018-2025 Romain Vimont
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
